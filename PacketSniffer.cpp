@@ -3,7 +3,8 @@
 #include <algorithm>
 
 // Static callback
-void PacketSniffer::packetHandler(u_char* user, const struct pcap_pkthdr* pkthdr, const u_char* packet) {
+void PacketSniffer::packetHandler(u_char* user, const struct pcap_pkthdr* pkthdr, const u_char* packet) 
+{
     auto* sniffer = reinterpret_cast<PacketSniffer*>(user);
     if (!sniffer) return;
     sniffer->handlePacket(pkthdr, packet);
@@ -33,16 +34,19 @@ PacketSniffer::PacketSniffer(const QString& interfaceName, QObject* parent)
     }
 }
 
-PacketSniffer::~PacketSniffer() {
+PacketSniffer::~PacketSniffer() 
+{
     stopCapture();
 }
 
-bool PacketSniffer::startCapture(int packetLimit) {
+bool PacketSniffer::startCapture(int packetLimit) 
+{
     if (!m_pcapHandle || m_isRunning) return false;
 
 #ifdef _WIN32
     WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) 
+    {
         qDebug() << "WSAStartup failed";
         return false;
     }
@@ -50,7 +54,8 @@ bool PacketSniffer::startCapture(int packetLimit) {
 
     m_packetLimit = packetLimit;
     m_captureThread = new QThread(this);
-    connect(m_captureThread, &QThread::started, [this]() {
+    connect(m_captureThread, &QThread::started, [this]() 
+        {
         // Use pcap_loop for efficiency instead of manual loop
         pcap_loop(m_pcapHandle.get(), m_packetLimit, packetHandler, reinterpret_cast<u_char*>(this));
         });
@@ -60,7 +65,8 @@ bool PacketSniffer::startCapture(int packetLimit) {
     return true;
 }
 
-void PacketSniffer::stopCapture() {
+void PacketSniffer::stopCapture() 
+{
     if (m_isRunning) {
         m_isRunning = false;
         if (m_pcapHandle) {
@@ -76,17 +82,20 @@ void PacketSniffer::stopCapture() {
     }
 }
 
-void PacketSniffer::handlePacket(const struct pcap_pkthdr* pkthdr, const u_char* packet) {
+void PacketSniffer::handlePacket(const struct pcap_pkthdr* pkthdr, const u_char* packet) 
+{
     PacketInfo info;
     info.timestamp = QDateTime::fromMSecsSinceEpoch(
         static_cast<qint64>(pkthdr->ts.tv_sec) * 1000 + pkthdr->ts.tv_usec / 1000);
     info.length = pkthdr->len;
-    if (parsePacket(packet, pkthdr->caplen, info)) {
+    if (parsePacket(packet, pkthdr->caplen, info)) 
+    {
         emit newPacket(info);
     }
 }
 
-bool PacketSniffer::parsePacket(const u_char* packetData, int len, PacketInfo& info) {
+bool PacketSniffer::parsePacket(const u_char* packetData, int len, PacketInfo& info) 
+{
     // Assume Ethernet header (14 bytes); check pcap_datalink() in future for robustness
     const int ethOffset = 14;
     if (len < ethOffset + static_cast<int>(sizeof(ip_header))) return false;
@@ -96,7 +105,8 @@ bool PacketSniffer::parsePacket(const u_char* packetData, int len, PacketInfo& i
     if (len < ethOffset + ipHdrLen) return false;
 
     // Protocol
-    switch (ih->proto) {
+    switch (ih->proto) 
+    {
     case 6: info.protocol = "TCP"; break;
     case 17: info.protocol = "UDP"; break;
     default: info.protocol = "Other"; return false;  // Skip non-TCP/UDP for MVP
@@ -118,12 +128,14 @@ bool PacketSniffer::parsePacket(const u_char* packetData, int len, PacketInfo& i
     const u_char* transportHdr = packetData + ethOffset + ipHdrLen;
     if (len < static_cast<int>(transportHdr - packetData + sizeof(tcp_header))) return false;
 
-    if (info.protocol == "TCP") {
+    if (info.protocol == "TCP") 
+    {
         const tcp_header* th = reinterpret_cast<const tcp_header*>(transportHdr);
         info.sourcePort = ntohs(th->sport);
         info.destPort = ntohs(th->dport);
     }
-    else {  // UDP
+    else 
+    {  // UDP
         const udp_header* uh = reinterpret_cast<const udp_header*>(transportHdr);
         info.sourcePort = ntohs(uh->sport);
         info.destPort = ntohs(uh->dport);
@@ -133,7 +145,8 @@ bool PacketSniffer::parsePacket(const u_char* packetData, int len, PacketInfo& i
     const u_char* payloadStart = transportHdr + 8;
     int snippetLen = (std::min)(50, len - static_cast<int>(payloadStart - packetData));
     info.payloadSnippet.reserve(3 * snippetLen);
-    for (int i = 0; i < snippetLen; ++i) {
+    for (int i = 0; i < snippetLen; ++i) 
+    {
         info.payloadSnippet += QString::asprintf("%02x ", payloadStart[i]);
     }
     info.payloadSnippet.chop(1);  // Remove trailing space

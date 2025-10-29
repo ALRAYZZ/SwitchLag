@@ -15,7 +15,8 @@
 #pragma comment(lib, "ws2_32.lib")
 #endif
 
-struct PacketInfo {
+struct PacketInfo 
+{
     QDateTime timestamp;
     QString sourceIP;
     QString destIP;
@@ -29,14 +30,16 @@ struct PacketInfo {
 };
 
 // Custom structs for headers (Windows-compatible, no netinet needed)
-typedef struct ip_address {
+typedef struct ip_address 
+{
     u_char byte1;
     u_char byte2;
     u_char byte3;
     u_char byte4;
 } ip_address;
 
-typedef struct ip_header {
+typedef struct ip_header 
+{
     u_char  ver_ihl;        // Version (4 bits) + IP header length (4 bits)
     u_char  tos;            // Type of service
     u_short tlen;           // Total length
@@ -50,7 +53,8 @@ typedef struct ip_header {
     u_int   op_pad;         // Option + Padding
 } ip_header;
 
-typedef struct tcp_header {
+typedef struct tcp_header 
+{
     u_short sport;          // Source port
     u_short dport;          // Destination port
     u_int   sequence;       // Sequence number
@@ -63,14 +67,16 @@ typedef struct tcp_header {
     // Options follow...
 } tcp_header;
 
-typedef struct udp_header {
+typedef struct udp_header 
+{
     u_short sport;          // Source port
     u_short dport;          // Destination port
     u_short len;            // Datagram length
     u_short crc;            // Checksum
 } udp_header;
 
-class PacketSniffer : public QObject {
+class PacketSniffer : public QObject 
+{
     Q_OBJECT
 
 public:
